@@ -1,0 +1,78 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: web-release-dev-tag
+spec:
+  repository:
+    name: service-chart-dev-tag
+  plan:
+    name: helm-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout
+    svcAcc: dev-sa
+    gcpProject: flare-dev
+    k8sCluster:
+      zone: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "location" | getValue "value" }}
+      name: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "name" | getValue "value" }}
+    helm:
+      releaseName: web
+      releaseNamespace: toptal
+      timeout: 480s
+      inputs:
+        replicaCount: 1
+        deployment:
+          container:
+            environment:
+              - name: PORT
+                value: 3000
+              - name: API_HOST
+                value: https://api.endpoints.flare-dev.cloud.goog
+            ports:
+              - 3000
+            image:
+              url: ${{ getDependencyOutput "web-build-dev-tag" "release" }}
+            health:
+              readiness:
+                path: /
+                port: 3000
+              liveness:
+                path: /
+                port: 3000
+            resources:
+              requests:
+                cpu: 50m
+                memory: 50Mi
+              limits:
+                cpu: 100m
+                memory: 100Mi
+        service:
+          prefix: /
+          ports:
+            - port: 80
+              targetPort: 3000
+              protocol: TCP
+              name: tcp
+        destinationRule:
+          host: web.toptal.svc.cluster.local
+        virtualService:
+          hosts:
+            - frontend.endpoints.flare-dev.cloud.goog
+            - web.toptal.svc.cluster.local
+          match:
+            - name: default
+              prefixes:
+                - /
+              rewrite: /
+              routes:
+                - host: web.toptal.svc.cluster.local
+                  port: 80
+  ciphers:
+    - name: dev-sa
+  dependencies:
+    - name: web-build-dev-tag
+    - name: k8s-dev-tag
+    - name: istio-dev-tag

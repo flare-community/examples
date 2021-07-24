@@ -1,0 +1,36 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: network-dev-tag
+spec:
+  repository:
+    name: ground-dev-tag
+  plan:
+    name: terraform-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/modules/network
+    svcAcc: dev-sa
+    terraform:
+      bucket: vc-demo
+      prefix: network
+      inputs:
+        vpc:
+          project: flare-dev
+          name: toptal
+          description: toptal exercise
+        subnetworks:
+          toptal-k8s:
+            description: toptal subnetwork exercise
+            region: europe-west1
+            cidr: "10.126.0.0/15"
+            secondary_ranges:
+              - range_name: services-cidr
+                ip_cidr_range: "10.122.0.0/15"
+              - range_name: pods-cidr
+                ip_cidr_range: "10.124.0.0/15"
+  ciphers:
+    - name: dev-sa

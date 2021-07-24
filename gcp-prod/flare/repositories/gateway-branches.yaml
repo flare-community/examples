@@ -1,0 +1,13 @@
+apiVersion: repositories.flare.engineering/v1alpha1
+kind: Repository
+metadata:
+  name: gateway-branches
+spec:
+  description: Repository reference that will trigger on any branch commit
+  remote:
+    private:
+      name: flare-example/gateway
+      integration: github
+      trigger:
+        type: branch
+        branch: .*

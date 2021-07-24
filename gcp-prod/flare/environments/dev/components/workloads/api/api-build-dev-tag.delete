@@ -1,0 +1,20 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: api-build-dev-tag
+spec:
+  repository:
+    name: node-app-dev-tag
+  plan:
+    name: node-docker-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/api
+    svcAcc: dev-sa
+    docker:
+      registry: gcr.io/flare-dev/
+  ciphers:
+    - name: dev-sa

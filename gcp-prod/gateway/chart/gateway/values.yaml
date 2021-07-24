@@ -1,0 +1,25 @@
+grafana:
+  expose: true
+  host: grafana.endpoints.my-gcp-project.cloud.goog
+
+ingress:
+  # external static ip name to use when creating the ingress
+  ip: toptal
+
+  # a map <string,string> of name to domain
+  domains:
+    grafana: grafana.endpoints.my-gcp-project.cloud.goog
+    frontend: frontend.endpoints.my-gcp-project.cloud.goog
+    api: api.endpoints.my-gcp-project.cloud.goog
+
+  backend:
+    cdn:
+      enabled: true
+      cachePolicy:
+        includeHost: true
+        includeProtocol: true
+        includeQueryString: true
+    timeoutSec: 30
+    # a string array that contains gcp cloud armor policy names to use
+    policies:
+      - edge-fw-policy

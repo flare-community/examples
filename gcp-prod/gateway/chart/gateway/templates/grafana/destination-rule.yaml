@@ -1,0 +1,14 @@
+{{- if (default .Values.grafana.expose true) }}
+  {{- with .Values.grafana }}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: grafana-dr
+  namespace: {{ $.Release.Namespace }}
+spec:
+  host: grafana.{{ $.Release.Namespace }}.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+  {{- end }}
+{{- end }}

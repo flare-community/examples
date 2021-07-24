@@ -1,0 +1,13 @@
+{{- with .Values.ingress }}
+{{- range $name, $domain := .domains }}
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  domains:
+    - {{ $domain }}
+{{- end }}
+{{- end }}

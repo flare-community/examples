@@ -1,0 +1,14 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: kustomize-plan
+spec:
+  upsert:
+    - args:
+        - build
+      command: kustomize
+      image:
+        url: k8s.gcr.io/kustomize/kustomize
+        version: v3.8.7
+      name: kustomize-build
+      workDir: ${{ .Inputs.workDir }}

@@ -1,0 +1,24 @@
+{{- with $dr := .Values.destinationRule }}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ $.Release.Name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  host: {{ $dr.host }}
+  trafficPolicy:
+    tls:
+      mode: {{ $dr.tlsMode }}
+    loadBalancer:
+      simple: {{ $dr.lbMode }}
+  {{- if $dr.subsets }}
+  subsets:
+  {{- range $subset := $dr.subsets }}
+  - name: {{ $subset.name }}
+    labels:
+      {{- range $key, $val := $subset.labels }}
+        {{ $key }}: {{ $val }}
+        {{- end }}
+  {{- end}}
+  {{- end}}
+{{- end }}

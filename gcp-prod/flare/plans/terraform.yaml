@@ -1,0 +1,163 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: terraform-workflow
+spec:
+  description: Terraform workflow that will only apply and destroy on tag release
+  delete:
+    ### GCLOUD LOGIN
+    - args:
+        - -c
+        - |
+          set -eu
+          printf '%s' '${{ index .Inputs.svcAcc | getCipher }}' > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+
+          # check if backend.tf file exists, if not create one
+          [ -f backend.tf ] || echo 'terraform {
+            backend "gcs" {}
+          }' > backend.tf
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: gcloud-login
+
+    ### GENERATE TFVARS JSON
+    - args:
+        - -c
+        - printf '%s' '${{ index .Inputs.terraform.inputs | toJson }}' > ${{ .Inputs.workDir }}/terraform.tfvars.json
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      name: generate-inputs
+
+    ### TERRAFORM INIT
+    - args:
+        - init
+        - -backend-config=bucket=${{ .Inputs.terraform.bucket }}
+        - -backend-config=prefix=${{ .Inputs.terraform.prefix }}
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.13.5
+      name: terraform-init
+      workDir: ${{ .Inputs.workDir }}
+
+    ### TERRAFORM PLAN
+    - args:
+        - plan
+        - -input=false
+        - -destroy
+        - -out=$TF_PLAN_FILE
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.13.5
+      name: terraform-plan
+      workDir: ${{ .Inputs.workDir }}
+
+    ### TERRAFORM DESTROY
+    - args:
+        - destroy
+        - -input=false
+        - -auto-approve
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.13.5
+      condition: Environment.REPOSITORY_BRANCH == ""
+      name: terraform-destroy
+      workDir: ${{ .Inputs.workDir }}
+
+  environment:
+    CLOUDSDK_CONFIG: /workspace/.gcloud
+    GOOGLE_APPLICATION_CREDENTIALS: /workspace/gcp-svc-acc.json
+    TF_IN_AUTOMATION: "true"
+    TF_PLAN_FILE: tfplan
+
+  upsert:
+    ### GCLOUD LOGIN
+    - args:
+        - -c
+        - |
+          set -eu
+          printf '%s' '${{ index .Inputs.svcAcc | getCipher }}' > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+
+          # check if backend.tf file exists, if not create one
+          [ -f backend.tf ] || echo 'terraform {
+            backend "gcs" {}
+          }' > backend.tf
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: gcloud-login
+
+    ### GENERATE TFVARS JSON
+    - args:
+        - -c
+        - printf '%s' '${{ index .Inputs.terraform.inputs | toJson }}' > ${{ .Inputs.workDir }}/terraform.tfvars.json
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      name: generate-inputs
+
+    ### TERRAFORM INIT
+    - args:
+        - init
+        - -backend-config=bucket=${{ .Inputs.terraform.bucket }}
+        - -backend-config=prefix=${{ .Inputs.terraform.prefix }}
+        - -reconfigure
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.13.5
+      name: terraform-init
+      workDir: ${{ .Inputs.workDir }}
+
+    ### TERRAFORM PLAN
+    - args:
+        - plan
+        - -input=false
+        - -out=$TF_PLAN_FILE
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.13.5
+      name: terraform-plan
+      workDir: ${{ .Inputs.workDir }}
+
+    ### TERRAFORM APPLY
+    - args:
+        - apply
+        - -input=false
+        - -auto-approve
+        - $TF_PLAN_FILE
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.13.5
+      condition: Environment.REPOSITORY_BRANCH == ""
+      name: terraform-apply
+      workDir: ${{ .Inputs.workDir }}
+
+    ### TERRAFORM OUTPUTS
+    - args:
+        - -c
+        - |
+          set -eu
+          terraform output -json > /workspace/checkout/outputs.json
+      command: /bin/sh
+      image:
+        url: hashicorp/terraform
+        version: 0.13.5
+      condition: Environment.REPOSITORY_BRANCH == ""
+      name: terraform-output
+      outputs: outputs.json
+      workDir: ${{ .Inputs.workDir }}

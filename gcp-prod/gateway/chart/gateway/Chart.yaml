@@ -1,0 +1,4 @@
+apiVersion: v2
+name: gateway
+description: Expose an Istio mesh through a configurable kubernetes ingress.
+version: 0.0.1

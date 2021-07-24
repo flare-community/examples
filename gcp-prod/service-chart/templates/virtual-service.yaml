@@ -1,0 +1,50 @@
+{{- with .Values.virtualService }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ $.Release.Name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  gateways:
+    {{- range $gateway := .gateways }}
+    - {{ $gateway }}
+    {{- end }}
+  hosts:
+    {{- range $host := .hosts }}
+    - {{ $host | quote }}
+    {{- end }}
+  http:
+  {{- range $match := .match }}
+  - name: {{ $match.name }}
+    match:
+      {{- range $prefix := $match.prefixes }}
+      - uri:
+          prefix: {{ $prefix }}
+      {{- end }}
+    rewrite:
+      uri: {{ $match.rewrite }}
+  {{- if  $match.headers }}
+    headers:
+{{ toYaml $match.headers | trim | indent 6}}
+  {{- end }}
+    route:
+      {{- range $route := $match.routes }}
+      - destination:
+          host: {{ $route.host }}
+          port:
+            number: {{ $route.port }}
+        {{- if $route.subset }}
+        subset: {{ $route.subset }}
+        {{- end }}
+        {{- if $route.weight }}
+        weight: {{ $route.weight }}
+        {{ else }}
+        weight: 100
+        {{- end }}
+      {{- if $route.corsPolicy }}
+        corsPolicy:
+{{- toYaml $route.corsPolicy | trim | nindent 10}}
+      {{- end }}
+      {{- end }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,24 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: istio-dev-tag
+spec:
+  repository:
+    name: gateway-dev-tag
+  plan:
+    name: istioctl-plan
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/manifests/istio
+    svcAcc: dev-sa
+    gcpProject: flare-dev
+    k8sCluster:
+      zone: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "location" | getValue "value" }}
+      name: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "name" | getValue "value" }}
+  ciphers:
+    - name: dev-sa
+  dependencies:
+    - name: k8s-dev-tag

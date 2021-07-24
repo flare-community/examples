@@ -1,0 +1,28 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: hello-plan
+spec:
+  description: Plan for Hello World
+  upsert:
+    - name: hello
+      workDir: ${{ .Inputs.workDir }}
+      description: Hello
+      image:
+        url: alpine
+        version: "3.7"
+      command: "/bin/sh"
+      args:
+        - "-c"
+        - "cat hello.txt"
+  delete:
+    - name: goodbye
+      workDir: ${{ .Inputs.workDir }}
+      description: Goodbye
+      image:
+        url: alpine
+        version: "3.7"
+      command: "/bin/sh"
+      args:
+        - "-c"
+        - "cat goodbye.txt"

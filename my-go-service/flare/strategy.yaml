@@ -1,0 +1,10 @@
+apiVersion: strategies.flare.engineering/v1alpha1
+kind: Strategy
+metadata:
+  name: strategy-sample
+spec:
+  description: strategy-sample
+  suspended: true
+  resources:
+    cpu: 100m
+    memory: 1Gi

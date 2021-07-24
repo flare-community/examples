@@ -1,0 +1,96 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: terraform-plan
+spec:
+  delete:
+    - args:
+        - -c
+        - |
+          set -eu
+          printf '%s' '${{ getCipher "gcp-terraform-service-account" }}' > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      name: gcloud-login
+    - args:
+        - init
+        - -backend-config=bucket=${{ .Inputs.terraform.bucket }}
+        - -backend-config=prefix=${{ .Inputs.terraform.prefix }}
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.15.0-rc1
+      name: terraform-init
+      workDir: ${{ .Inputs.workDir }}
+    - args:
+        - destroy
+        - -auto-approve
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.15.0-rc1
+      name: terraform-destroy
+      workDir: ${{ .Inputs.workDir }}
+  environment:
+    CLOUDSDK_CONFIG: /workspace/.gcloud
+    GOOGLE_APPLICATION_CREDENTIALS: /workspace/gcp-svc-acc.json
+    TF_IN_AUTOMATION: "true"
+    TF_PLAN_FILE: tfplan
+  upsert:
+    - args:
+        - -c
+        - |
+          set -eu
+          printf '%s' '${{ getCipher "gcp-terraform-service-account" }}' > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      name: gcloud-login
+    - args:
+        - init
+        - -backend-config=bucket=${{ .Inputs.terraform.bucket }}
+        - -backend-config=prefix=${{ .Inputs.terraform.prefix }}
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.15.0-rc1
+      name: terraform-init
+      workDir: ${{ .Inputs.workDir }}
+    - args:
+        - plan
+        - -input=false
+        - -out=$TF_PLAN_FILE
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.15.0-rc1
+      name: terraform-plan
+      workDir: ${{ .Inputs.workDir }}
+    - args:
+        - apply
+        - -input=false
+        - -auto-approve
+        - $TF_PLAN_FILE
+      command: terraform
+      image:
+        url: hashicorp/terraform
+        version: 0.15.0-rc1
+      name: terraform-apply
+      workDir: ${{ .Inputs.workDir }}
+    - args:
+        - -c
+        - |
+          set -eu
+          terraform output -json > outputs.json
+      command: /bin/sh
+      image:
+        url: hashicorp/terraform
+        version: 0.15.0-rc1
+      name: terraform-output
+      outputs: outputs.json
+      workDir: ${{ .Inputs.workDir }}

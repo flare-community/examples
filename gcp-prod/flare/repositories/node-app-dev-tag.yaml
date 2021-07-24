@@ -1,0 +1,13 @@
+apiVersion: repositories.flare.engineering/v1alpha1
+kind: Repository
+metadata:
+  name: node-app-dev-tag
+spec:
+  description: Repository reference that will trigger on tags that end with -dev-ga
+  remote:
+    private:
+      name: flare-example/node-3tier-app
+      integration: github
+      trigger:
+        type: tag
+        pattern: .*(-dev-ga)$

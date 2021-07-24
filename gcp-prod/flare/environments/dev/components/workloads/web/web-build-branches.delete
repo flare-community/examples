@@ -1,0 +1,20 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: web-build-branches
+spec:
+  repository:
+    name: node-app-branches
+  plan:
+    name: node-docker-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/web
+    svcAcc: dev-sa
+    docker:
+      registry: gcr.io/flare-dev/
+  ciphers:
+    - name: dev-sa

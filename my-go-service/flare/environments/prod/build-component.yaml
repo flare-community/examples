@@ -1,0 +1,13 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: my-go-service-build-prod
+spec:
+  repository:
+    name: my-go-service
+  plan:
+    name: go-build-plan
+  environment:
+    name: prod
+  inputs:
+    workDir: /workspace/checkout/my-go-service/service

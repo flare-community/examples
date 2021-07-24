@@ -1,0 +1,9 @@
+apiVersion: repositories.flare.engineering/v1alpha1
+kind: Repository
+metadata:
+  name: my-go-service
+spec:
+  remote:
+    public:
+      url: "https://github.com/flare-community/examples"
+      ref: refs/heads/main

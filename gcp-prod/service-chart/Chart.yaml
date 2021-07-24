@@ -1,0 +1,4 @@
+apiVersion: v2
+description: Base components for a workload using Istio
+name: istio-workload
+version: 0.0.1

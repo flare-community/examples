@@ -1,0 +1,90 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: kubectl-plan
+spec:
+  description: kubectl workflow
+  delete:
+    ### GCLOUD LOGIN
+    - args:
+        - -c
+        - |
+          set -eu
+
+          printf '%s' '${{ index .Inputs.svcAcc | getCipher }}' > $GOOGLE_APPLICATION_CREDENTIALS
+
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: gcloud-login
+
+    ### KUBECTL UNINSTALL
+    - args:
+        - -c
+        - |
+          set -eu
+
+          echo 'fetching cluster credentials...'
+          gcloud container clusters get-credentials --zone=${{ .Inputs.k8sCluster.zone }} --project=${{ .Inputs.gcpProject }} ${{ .Inputs.k8sCluster.name }}
+
+          kubectl_flags='delete --recursive --ignore-not-found=true'
+          if [ -n "$REPOSITORY_BRANCH" ]; then
+            kubectl_flags="$kubectl_flags --dry-run"
+          fi
+
+          echo 'uninstalling...'
+          kubectl $kubectl_flags -f ${{ .Inputs.workDir }}
+      command: /bin/sh
+      image:
+        url: flareeng/flare
+        version: gcloud-istioctl-355-1.10
+      workDir: ${{ .Inputs.workDir }}
+      name: kubectl-uninstall
+
+  environment:
+    CLOUDSDK_CONFIG: /workspace/.gcloud
+    KUBECONFIG: /workspace/.kube/k8s-config.yaml
+    GOOGLE_APPLICATION_CREDENTIALS: /workspace/gcp-svc-acc.json
+
+  upsert:
+    ### GCLOUD LOGIN
+    - args:
+        - -c
+        - |
+          set -eu
+
+          printf '%s' '${{ index .Inputs.svcAcc | getCipher }}' > $GOOGLE_APPLICATION_CREDENTIALS
+
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: gcloud-login
+
+    ### KUBECTL INSTALL
+    - args:
+        - -c
+        - |
+          set -eu
+
+          echo 'fetching cluster credentials'
+          gcloud container clusters get-credentials --zone=${{ .Inputs.k8sCluster.zone }} --project=${{ .Inputs.gcpProject }} ${{ .Inputs.k8sCluster.name }}
+
+          kubectl_flags='apply --recursive'
+          if [ -n "$REPOSITORY_BRANCH" ]; then
+            kubectl_flags="$kubectl_flags --dry-run"
+          fi
+
+          echo 'installing...'
+          kubectl $kubectl_flags -f ${{ .Inputs.workDir }}
+      command: /bin/sh
+      image:
+        url: flareeng/flare
+        version: gcloud-istioctl-355-1.10
+      workDir: ${{ .Inputs.workDir }}
+      name: kubectl-install

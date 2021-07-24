@@ -1,0 +1,14 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: hello-component
+spec:
+  description: Component for Hello World
+  repository:
+    name: hello-repository
+  plan:
+    name: hello-plan
+  environment:
+    name: hello-environment
+  inputs:
+    workDir: /workspace/checkout/hello-world

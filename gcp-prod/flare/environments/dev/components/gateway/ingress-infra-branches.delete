@@ -1,0 +1,27 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: ingress-infra-branches
+spec:
+  repository:
+    name: gateway-branches
+  plan:
+    name: terraform-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/terraform/modules
+    svcAcc: dev-sa
+    terraform:
+      bucket: vc-demo
+      prefix: gateway
+      inputs:
+        project: flare-dev
+        dns_entries:
+          - api
+          - frontend
+          - grafana
+  ciphers:
+    - name: dev-sa

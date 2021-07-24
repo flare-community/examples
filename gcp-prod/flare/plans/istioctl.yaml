@@ -1,0 +1,90 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: istioctl-plan
+spec:
+  description: Istio workflow
+  delete:
+    ### GCLOUD LOGIN
+    - args:
+        - -c
+        - |
+          set -eu
+
+          printf '%s' '${{ index .Inputs.svcAcc | getCipher }}' > $GOOGLE_APPLICATION_CREDENTIALS
+
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: gcloud-login
+
+    ### ISTIOCTL UNINSTALL
+    - args:
+        - -c
+        - |
+          set -eu
+
+          echo 'fetching cluster credentials'
+          gcloud container clusters get-credentials --zone=${{ .Inputs.k8sCluster.zone }} --project=${{ .Inputs.gcpProject }} ${{ .Inputs.k8sCluster.name }}
+
+          kubectl_flags='delete --ignore-not-found=true'
+          if [ -n "$REPOSITORY_BRANCH" ]; then
+            kubectl_flags="$kubectl_flags --dry-run"
+          fi
+
+          echo 'uninstalling istio'
+          istioctl manifest generate -f istio-operator.yaml | kubectl $kubectl_flags -f -
+      command: /bin/sh
+      image:
+        url: flareeng/flare
+        version: gcloud-istioctl-355-1.10
+      workDir: ${{ .Inputs.workDir }}
+      name: istioctl-uninstall
+
+  environment:
+    CLOUDSDK_CONFIG: /workspace/.gcloud
+    KUBECONFIG: /workspace/.kube/k8s-config.yaml
+    GOOGLE_APPLICATION_CREDENTIALS: /workspace/gcp-svc-acc.json
+
+  upsert:
+    ### GCLOUD LOGIN
+    - args:
+        - -c
+        - |
+          set -eu
+
+          printf '%s' '${{ index .Inputs.svcAcc | getCipher }}' > $GOOGLE_APPLICATION_CREDENTIALS
+
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: gcloud-login
+
+    ### ISTIOCTL INSTALL
+    - args:
+        - -c
+        - |
+          set -eu
+
+          echo 'fetching cluster credentials'
+          gcloud container clusters get-credentials --zone=${{ .Inputs.k8sCluster.zone }} --project=${{ .Inputs.gcpProject }} ${{ .Inputs.k8sCluster.name }}
+
+          istio_flags='install -f istio-operator.yaml --skip-confirmation'
+          if [ -n "$REPOSITORY_BRANCH" ]; then
+            istio_flags="$istio_flags --dry-run"
+          fi
+
+          echo 'installing istio'
+          istioctl $istio_flags
+      command: /bin/sh
+      image:
+        url: flareeng/flare
+        version: gcloud-istioctl-355-1.10
+      workDir: ${{ .Inputs.workDir }}
+      name: istioctl-install

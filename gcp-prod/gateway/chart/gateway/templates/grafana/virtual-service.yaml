@@ -1,0 +1,24 @@
+{{- if (default .Values.grafana.expose true) }}
+  {{- with .Values.grafana }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: grafana-vs
+  namespace: {{ $.Release.Namespace }}
+spec:
+  hosts:
+    - {{ .host }}
+    - grafana.{{ $.Release.Namespace }}.svc.cluster.local
+  gateways:
+    - default-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            port:
+              number: 3000
+            host: grafana.{{ $.Release.Namespace }}.svc.cluster.local
+  {{- end }}
+{{- end }}

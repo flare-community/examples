@@ -1,0 +1,41 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: go-build-plan
+spec:
+  upsert:
+    - args:
+        - build
+        - -v
+      command: go
+      image:
+        url: golang
+        version: 1.15-alpine
+      name: go-build
+      workDir: ${{ .Inputs.workDir }}
+    - args:
+        - test
+        - -v
+      command: go
+      image:
+        url: golang
+        version: 1.15-alpine
+      name: go-test
+      workDir: ${{ .Inputs.workDir }}
+    - args:
+        - build
+        - .
+      command: docker
+      image:
+        url: docker
+        version: 20.10.6
+      name: docker-build
+      workDir: ${{ .Inputs.workDir }}
+    - args:
+        - build
+      command: kustomize
+      image:
+        url: k8s.gcr.io/kustomize/kustomize
+        version: v3.8.7
+      name: kustomize-build
+      workDir: ${{ .Inputs.workDir }}

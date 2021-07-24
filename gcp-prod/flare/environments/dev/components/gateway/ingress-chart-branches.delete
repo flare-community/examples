@@ -1,0 +1,43 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: ingress-chart-branches
+spec:
+  repository:
+    name: gateway-branches
+  plan:
+    name: helm-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/chart/gateway
+    svcAcc: dev-sa
+    gcpProject: flare-dev
+    k8sCluster:
+      zone: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "location" | getValue "value" }}
+      name: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "name" | getValue "value" }}
+    helm:
+      releaseName: gateway
+      releaseNamespace: istio-system
+      timeout: 480s
+      inputs:
+        grafana:
+          host: ${{ index (getDependencyOutput "ingress-infra-dev-tag" "outputs.json" | mustFromJson | getValue "dns_entries" | getValue "value" | getValue "grafana") 0 | getValue "name" }}
+        ingress:
+          ip: ${{ getDependencyOutput "ingress-infra-dev-tag" "outputs.json" | mustFromJson | getValue "ip_name" | getValue "value" }}
+          domains: |
+
+            ${{- range $k, $entry := getDependencyOutput "ingress-infra-dev-tag" "outputs.json" | mustFromJson | getValue "dns_entries" | getValue "value" }}
+              - ${{ $k }}:${{ index (index $entry 0) "address" }}
+            ${{- end }}
+        backend:
+          policies:
+            - ${{ getDependencyOutput "ingress-infra-dev-tag" "outputs.json" | mustFromJson | getValue "edge_policy" | getValue "value" }}
+  ciphers:
+    - name: dev-sa
+  dependencies:
+    - name: ingress-infra-dev-tag
+    - name: k8s-dev-tag
+    - name: istio-dev-tag

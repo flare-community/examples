@@ -1,0 +1,45 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: k8s-dev-tag
+spec:
+  repository:
+    name: ground-dev-tag
+  plan:
+    name: terraform-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/modules/k8s
+    svcAcc: dev-sa
+    terraform:
+      bucket: vc-demo
+      prefix: k8s
+      inputs:
+        project: flare-dev
+        cluster:
+          name: demo-k8s
+          min_master_version: "1.19.9-gke.1900"
+          location: europe-west1
+          network: ${{ getDependencyOutput "network-dev-tag" "outputs.json" | mustFromJson | getValue "vpc" | getValue "value" }}
+          subnetwork: ${{ getDependencyOutput "network-dev-tag" "outputs.json" | mustFromJson | getValue "subnetworks" | getValue "value" | getValue "toptal-k8s" }}
+          ip_allocation:
+            pods_range_name: pods-cidr
+            services_range_name: services-cidr
+        node_pools:
+          toptal:
+            min_count: 1
+            max_count: 1
+            tags:
+              - toptal
+            node_config:
+              preemptible: true
+              image_type: COS
+              machine_type: n1-standard-1
+              disk_size: 50
+  ciphers:
+    - name: dev-sa
+  dependencies:
+    - name: network-dev-tag

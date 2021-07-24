@@ -1,0 +1,11 @@
+apiVersion: strategies.flare.engineering/v1alpha1
+kind: Strategy
+metadata:
+  name: hello-strategy
+spec:
+  description: Strategy for Hello World
+  resources:
+    cpu: 250m
+    memory: 250Mi
+  dryRun: true
+  parallel: false

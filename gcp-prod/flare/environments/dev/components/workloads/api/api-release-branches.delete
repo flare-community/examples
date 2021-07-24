@@ -1,0 +1,88 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: api-release-branches
+spec:
+  repository:
+    name: service-chart-branches
+  plan:
+    name: helm-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout
+    svcAcc: dev-sa
+    gcpProject: flare-dev
+    k8sCluster:
+      zone: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "location" | getValue "value" }}
+      name: ${{ getDependencyOutput "k8s-dev-tag" "outputs.json" | mustFromJson | getValue "name" | getValue "value" }}
+    helm:
+      releaseName: api
+      releaseNamespace: toptal
+      timeout: 480s
+      inputs:
+        replicaCount: 1
+        deployment:
+          container:
+            environment:
+              - name: PORT
+                value: 3000
+              - name: DB
+                value: ${{ getDependencyOutput "db-api-dev-tag" "outputs.json" | mustFromJson | getValue "default_db_name" | getValue "value" }}
+              - name: DBUSER
+                value: ${{ getDependencyOutput "db-api-dev-tag" "outputs.json" | mustFromJson | getValue "default_db_user" | getValue "value" }}
+              - name: DBPASS
+                value: ${{ index "dev-db-password" | getCipher }}
+              - name: DBHOST
+                value: ${{ getDependencyOutput "db-api-dev-tag" "outputs.json" | mustFromJson | getValue "private_ip_address" | getValue "value" }}
+              - name: DBPORT
+                value: 5432
+            ports:
+              - 3000
+            image:
+              url: ${{ getDependencyOutput "api-build-dev-tag" "release" }}
+            health:
+              readiness:
+                path: /api/status
+                port: 3000
+              liveness:
+                path: /api/status
+                port: 3000
+            resources:
+              requests:
+                cpu: 50m
+                memory: 50Mi
+              limits:
+                cpu: 100m
+                memory: 100Mi
+        service:
+          prefix: /
+          ports:
+            - port: 80
+              targetPort: 3000
+              protocol: TCP
+              name: tcp
+        destinationRule:
+          host: api.toptal.svc.cluster.local
+        virtualService:
+          hosts:
+            - api.endpoints.flare-dev.cloud.goog
+            - api.toptal.svc.cluster.local
+          match:
+            - name: default
+              prefixes:
+                - /
+              rewrite: /
+              routes:
+                - host: api.toptal.svc.cluster.local
+                  port: 80
+  ciphers:
+    - name: dev-sa
+    - name: dev-db-password
+  dependencies:
+    - name: k8s-dev-tag
+    - name: api-build-dev-tag
+    - name: network-dev-tag
+    - name: db-api-dev-tag

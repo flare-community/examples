@@ -1,0 +1,13 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: my-go-service-kustomize-prod
+spec:
+  repository:
+    name: my-go-service
+  plan:
+    name: kustomize-plan
+  environment:
+    name: prod
+  inputs:
+    workDir: /workspace/checkout/my-go-service/provision/kustomize

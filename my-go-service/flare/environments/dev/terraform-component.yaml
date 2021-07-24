@@ -1,0 +1,19 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: my-go-service-terraform-dev
+spec:
+  repository:
+    name: my-go-service-provisioning
+  plan:
+    name: terraform-plan
+  environment:
+    name: dev
+  ciphers:
+    - name: gcp-terraform-service-account
+  inputs:
+    environment: dev
+    workDir: /workspace/checkout/my-go-service/provision/terraform/dev
+    terraform:
+      bucket: terraform-state
+      prefix: my-go-service/dev

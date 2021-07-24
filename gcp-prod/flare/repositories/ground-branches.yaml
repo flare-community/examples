@@ -1,0 +1,13 @@
+apiVersion: repositories.flare.engineering/v1alpha1
+kind: Repository
+metadata:
+  name: ground-branches
+spec:
+  description: Repository reference that will trigger on any branch commit
+  remote:
+    private:
+      name: flare-example/ground
+      integration: github
+      trigger:
+        type: branch
+        branch: .*

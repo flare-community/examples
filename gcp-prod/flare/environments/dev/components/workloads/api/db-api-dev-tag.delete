@@ -1,0 +1,34 @@
+apiVersion: components.flare.engineering/v1alpha1
+kind: Component
+metadata:
+  name: db-api-dev-tag
+spec:
+  repository:
+    name: ground-dev-tag
+  plan:
+    name: terraform-workflow
+  environment:
+    name: gcp-dev
+  execution:
+    dryRunFirst: false
+  inputs:
+    workDir: /workspace/checkout/modules/postgres
+    svcAcc: dev-sa
+    terraform:
+      bucket: vc-demo
+      prefix: postgres
+      inputs:
+        project: flare-dev
+        name: toptal
+        default_user:
+          user_name: test
+          user_password: ${{ index "dev-db-password" | getCipher }}
+        access:
+          network_name: ${{ getDependencyOutput "network-dev-tag" "outputs.json" | mustFromJson | getValue "vpc_name" | getValue "value" }}
+          network_self_link: ${{ getDependencyOutput "network-dev-tag" "outputs.json" | mustFromJson | getValue "vpc" | getValue "value" }}
+          require_ssl: false
+  ciphers:
+    - name: dev-sa
+    - name: dev-db-password
+  dependencies:
+    - name: network-dev-tag

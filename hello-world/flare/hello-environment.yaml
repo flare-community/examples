@@ -1,0 +1,6 @@
+apiVersion: environments.flare.engineering/v1alpha1
+kind: Environment
+metadata:
+  name: hello-environment
+spec:
+  description: Hello Environment

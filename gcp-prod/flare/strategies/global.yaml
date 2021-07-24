@@ -1,0 +1,11 @@
+apiVersion: strategies.flare.engineering/v1alpha1
+kind: Strategy
+metadata:
+  name: strategy-gcp-dev
+spec:
+  description: Strategy For GCP Dev
+  resources:
+    cpu: 250m
+    memory: 512Mi
+  dryRun: false
+  parallel: false

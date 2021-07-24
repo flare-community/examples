@@ -1,0 +1,64 @@
+apiVersion: plans.flare.engineering/v1alpha1
+kind: Plan
+metadata:
+  name: node-docker-workflow
+spec:
+  description: Workflow that will build a node project and build-push a docker image
+  environment:
+    CLOUDSDK_CONFIG: /workspace/.gcloud
+    GOOGLE_APPLICATION_CREDENTIALS: /workspace/gcp-svc-acc.json
+
+  upsert:
+    ### GCLOUD LOGIN
+    - args:
+        - -c
+        - |
+          set -eu
+          printf '%s' '${{ index .Inputs.svcAcc | getCipher }}' > $GOOGLE_APPLICATION_CREDENTIALS
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+      command: /bin/sh
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: gcloud-login
+
+    ### NODE INSTALL
+    - args:
+        - install
+      command: npm
+      image:
+        url: node
+        version: 16-alpine3.12
+      workDir: ${{ .Inputs.workDir }}
+      name: npm-install
+
+    ### DOCKER
+    - args:
+        - -c
+        - |
+
+          RELEASE="$REPOSITORY_SHA"
+          if [ -z "$RELEASE" ]; then
+            RELEASE="$EXECUTION_ID"
+          fi
+
+          echo "Building and pushing image: ${{ .Inputs.docker.registry }}$COMPONENT_NAME:$RELEASE"
+
+          TAG="${{ .Inputs.docker.registry }}$COMPONENT_NAME:$RELEASE"
+          docker login -u oauth2accesstoken -p "$(gcloud auth print-access-token)" https://gcr.io
+          docker build -t $TAG .
+
+          if [ -z "$REPOSITORY_BRANCH" ]; then
+            echo "pushing docker image $TAG"
+            docker push $TAG
+          fi
+
+          echo -n $TAG > /workspace/checkout/release
+      command: /bin/sh
+      outputs: release
+      image:
+        url: google/cloud-sdk
+        version: 335.0.0
+      workDir: ${{ .Inputs.workDir }}
+      name: docker-build-push
